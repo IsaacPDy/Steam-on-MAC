@@ -111,10 +111,15 @@ set_steam_icon() {
   for _ in $(seq 1 120); do [ -f "$ico" ] && break; sleep 10; done
   [ -f "$ico" ] || return
   png="$(mktemp -d)/steam.png"
-  /usr/bin/sips -s format png "$ico" --out "$png" >/dev/null &&
-    /usr/bin/osascript -l JavaScript -e 'function run(a) { ObjC.import("AppKit");
-      return $.NSWorkspace.sharedWorkspace.setIconForFileOptions($.NSImage.alloc.initWithContentsOfFile(a[0]), a[1], 0) }' "$png" "$APP" >/dev/null &&
-    echo "Set app icon to Steam's logo"
+  /usr/bin/sips -s format png "$ico" --out "$png" >/dev/null || return
+  # osascript with AppKit loaded can linger long after the icon is written (showing a blank
+  # "exec" tile in the Dock), so give it a few seconds and then end it.
+  /usr/bin/osascript -l JavaScript -e 'function run(a) { ObjC.import("AppKit");
+    return $.NSWorkspace.sharedWorkspace.setIconForFileOptions($.NSImage.alloc.initWithContentsOfFile(a[0]), a[1], 0) }' "$png" "$APP" >/dev/null &
+  local pid=$!
+  for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+  kill "$pid" 2>/dev/null
+  [ -f "$APP/Icon"$'\r' ] && echo "Set app icon to Steam's logo"
   rm -rf "$(dirname "$png")"
 }
 [ -f "$APP/Icon"$'\r' ] || set_steam_icon &

@@ -8,7 +8,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 NAME="Steam on Mac"
 VERSION="1.0"
-DIST="$HERE/dist"
+DIST="${DIST:-$HERE/dist}"
 APP="$DIST/$NAME.app"
 ZIP="$DIST/Steam-on-Mac.zip"
 WINE_SRC="${WINE_SRC:-$HERE/Wine CX.app/Contents/Resources/wine}"
