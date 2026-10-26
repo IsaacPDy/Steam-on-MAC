@@ -10,3 +10,4 @@
 *.tar.xz
 *.exe
 .DS_Store
+*.zip
