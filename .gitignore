@@ -1,0 +1,12 @@
+# Wine prefix: holds the Steam client, installed games and your Steam login. Never commit it.
+/prefix/
+# Built or downloaded by setup.sh / make-app.sh (Wine is published as a release asset instead).
+/Wine CX.app/
+/Wine Staging.app/
+/Steam.app/
+/dxmt/
+/build/
+/dist/
+*.tar.xz
+*.exe
+.DS_Store

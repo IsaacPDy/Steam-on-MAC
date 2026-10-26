@@ -1,0 +1,73 @@
+--- a/dlls/win32u/dce.c	2026-10-26 10:08:49
++++ b/dlls/win32u/dce.c	2026-10-26 10:12:53
+@@ -922,7 +922,9 @@
+     }
+     height = abs( params->info.bmiHeader.biHeight );
+ 
+-    hdc = NtUserGetDCEx( hwnd, NULL, DCX_CLIPSIBLINGS );
++    /* top-level windows get a surface covering the whole window rect, see get_cross_process_surface */
++    hdc = NtUserGetDCEx( hwnd, NULL, DCX_CLIPSIBLINGS |
++                         (NtUserGetAncestor( hwnd, GA_PARENT ) == get_desktop_window() ? DCX_WINDOW : 0) );
+     NtGdiSetDIBitsToDeviceInternal( hdc, params->bounds.left, params->bounds.top,
+                                     params->bounds.right - params->bounds.left, params->bounds.bottom - params->bounds.top,
+                                     params->bounds.left, height - params->bounds.bottom, 0, height,
+@@ -932,6 +934,50 @@
+ }
+ 
+ /* CX HACK 23950 - END */
++
++/* Cross-process painting: a DC whose top-level window belongs to another process (for
++ * instance Chromium's GPU/compositor process painting into the browser's window) gets a
++ * shared memory surface that is flushed to the window's owner, which copies it onto its
++ * own window surface. Without this the drawing is silently discarded. */
++static struct
++{
++    HWND hwnd;
++    struct window_surface *surface;
++} xproc_surfaces[16];
++static pthread_mutex_t xproc_lock = PTHREAD_MUTEX_INITIALIZER;
++
++static struct window_surface *get_cross_process_surface( HWND top_win, const RECT *top_rect )
++{
++    struct window_surface *surface, *old = NULL;
++    int i, slot = -1;
++
++    pthread_mutex_lock( &xproc_lock );
++    for (i = 0; i < ARRAY_SIZE(xproc_surfaces); i++)
++    {
++        if (xproc_surfaces[i].hwnd == top_win) { slot = i; break; }
++        if (slot < 0 && !xproc_surfaces[i].hwnd) slot = i;
++    }
++    if (slot < 0) slot = 0;
++    if (xproc_surfaces[slot].hwnd == top_win) old = xproc_surfaces[slot].surface;
++
++    surface = create_shm_surface( top_win, top_win, top_rect, old );
++    if (surface && surface == old)
++    {
++        /* reused: create_shm_surface added the caller's reference */
++    }
++    else
++    {
++        struct window_surface *prev = xproc_surfaces[slot].surface;
++        register_window_surface( prev, surface );
++        if (prev) window_surface_release( prev );
++        xproc_surfaces[slot].hwnd = surface ? top_win : 0;
++        xproc_surfaces[slot].surface = surface;
++        if (surface) window_surface_add_ref( surface ); /* caller's reference */
++        TRACE( "cross-process surface %p for %p %s\n", surface, top_win, wine_dbgstr_rect( top_rect ) );
++    }
++    pthread_mutex_unlock( &xproc_lock );
++    return surface;
++}
+ 
+ 
+ /*******************************************************************
+@@ -1079,6 +1125,8 @@
+             if (surface) window_surface_add_ref( surface );
+             release_win_ptr( win );
+         }
++        else if (win == WND_OTHER_PROCESS && top_win && !IsRectEmpty( &top_rect ))
++            surface = get_cross_process_surface( top_win, &top_rect );
+     }
+ 
+     if (!surface) SetRectEmpty( &top_rect );
