@@ -1,4 +1,4 @@
-# Steam on Mac (CrossOver-source Wine + DXMT)
+# Steam on Mac (Wine 11.0 + DXMT)
 
 Runs the Windows Steam client and Windows games on macOS with Wine 11.0 built from CodeWeavers' published
 CrossOver 26.0.0 source (LGPL) and DXMT v0.80 (Direct3D 10/11 to Metal). These are not CrossOver's own binaries,

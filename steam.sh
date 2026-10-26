@@ -1,5 +1,5 @@
 #!/bin/bash
-# Launch Steam in the cloned bottle using the bundled open-source Wine Staging.
+# Launch Steam in ./prefix using the bundled Wine build (see README.md).
 # Usage: ./steam.sh [steam args...]   |   ./steam.sh --wine <wine args...>   |   ./steam.sh --dxmt-check
 HERE="$(cd "$(dirname "$0")" && pwd)"
 WINE_APP="${WINE_APP:-Wine CX}"

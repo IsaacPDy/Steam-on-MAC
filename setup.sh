@@ -28,7 +28,7 @@ if [ "$(uname -m)" = arm64 ] && ! arch -x86_64 /usr/bin/true 2>/dev/null; then
 fi
 
 if [ ! -x "$WINE_APP/Contents/Resources/wine/bin/wine" ]; then
-  step "Downloading Wine (CrossOver-source build with DXMT)"
+  step "Downloading Wine 11.0 with DXMT"
   curl -fL --progress-bar -o "$TMP/wine.tar.xz" "$WINE_URL"
   echo "$WINE_SHA256  $TMP/wine.tar.xz" | shasum -a 256 -c - >/dev/null || die "Wine download failed its checksum; try again."
   tar -xJf "$TMP/wine.tar.xz" -C "$HERE"
